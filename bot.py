@@ -1,5 +1,6 @@
 import os
 import json
+import asyncio
 
 from typing import List, Dict, Any
 
@@ -9,22 +10,45 @@ from discord.ext.commands import Bot, Context, BadArgument, check
 import settings
 
 
-PREFIX = ('hacks ', 'Hacks ')
+PREFIX = ('hacks ', 'Hacks ', 'hack ', 'Hacks ')
 DISCORD_API_KEY = os.environ.get('DISCORD_API_KEY')
 
 CS_BLUE = discord.Color.from_rgb(1, 130, 180)
-CS_GREEN = discord.Color.from_rgb(1, 153, 1) # (0, 180, 0)
+CS_GREEN = discord.Color.from_rgb(1, 153, 1)
 
 bot = Bot(command_prefix=PREFIX)
 hacks: List = []
 guilds: Dict[int, Any] = {}
 
 
-with open('data.json', 'r') as infile:
-    hacks = json.loads(infile.read()) or []
+def load_hacks():
+    global hacks
 
-with open('guilds.json', 'r') as infile:
-    guilds = json.loads(infile.read()) or {}
+    try:
+        with open('data.json', 'r') as infile:
+            hacks = json.loads(infile.read()) or []
+    except FileNotFoundError:
+        hacks = []
+
+
+def load_guilds():
+    global guilds
+
+    try:
+        with open('guilds.json', 'r') as infile:
+            guilds = json.loads(infile.read()) or {}
+    except FileNotFoundError:
+        guilds = []
+
+
+def write_hacks():
+    with open('data.json', 'w') as outfile:
+        json.dump(hacks, outfile, indent=2)
+
+
+def write_guilds():
+    with open('guilds.json', 'w') as outfile:
+        json.dump(guilds, outfile, indent=2)
 
 
 @bot.event
@@ -53,10 +77,6 @@ def id_to_mention(user_id):
     return f'<@{user_id}>'
 
 
-def get_hacks(participants: str):
-    return settings.MAIN_TEXT
-
-
 def format_hack(hack):
     parts = ''
 
@@ -79,20 +99,10 @@ def format_hacks(add_index=False):
     return parts
 
 
-def write_hacks():
-    with open('data.json', 'w') as outfile:
-        json.dump(hacks, outfile, indent=2)
-
-
-def write_guilds():
-    with open('guilds.json', 'w') as outfile:
-        json.dump(guilds, outfile, indent=2)
-
-
 async def send_hackathon_info(channel: discord.TextChannel, edit=None, send=True):
     embed = discord.Embed(
         title=settings.TITLE,
-        description=get_hacks(format_hacks()),
+        description=settings.MAIN_TEXT,
         color=CS_BLUE
     )
 
@@ -100,7 +110,8 @@ async def send_hackathon_info(channel: discord.TextChannel, edit=None, send=True
         try:
             message = await channel.fetch_message(edit)
             if message:
-                return await message.edit(embed=embed)
+                await message.edit(embed=embed)
+                return message
         except discord.NotFound:
             pass
 
@@ -122,7 +133,8 @@ async def send_hacks_list(channel: discord.TextChannel, edit=None, send=True):
         try:
             message = await channel.fetch_message(edit)
             if message:
-                return await message.edit(embed=embed)
+                await message.edit(embed=embed)
+                return message
         except discord.NotFound:
             pass
 
@@ -148,7 +160,7 @@ async def edit_sent(ctx: Context):
 
 @bot.command('list', brief='List all hacks')
 async def list_(ctx: Context):
-    await send_hacks_list(ctx)
+    await send_hacks_list(ctx.channel)
 
 
 @bot.command('send', brief='Send hackathon info and hacks list msgs')
@@ -223,7 +235,7 @@ async def add(ctx: Context, project: str = None):
         write_hacks()
 
         await ctx.send(f'Added hack "{format_hack(hack)}"')
-        await list_(ctx)
+        await send_hacks_list(ctx.channel)
         await edit_sent(ctx)
 
 
@@ -240,7 +252,7 @@ async def update(ctx: Context, index: int = None, project: str = None):
     mentions = ctx.message.mentions
 
     if index == None or index >= len(hacks):
-        await list_(ctx)
+        await send_hacks_list(ctx.channel)
 
     elif not project:
         embed = discord.Embed(
@@ -252,16 +264,17 @@ async def update(ctx: Context, index: int = None, project: str = None):
     else:
         previous = hacks[index]
 
-        if not (ctx.author.id in previous['people'] or is_mod(ctx)):
+        if not (ctx.author.id in previous['people'] or await is_mod(ctx)):
             await ctx.send(f'Error: You do not have permission to modify "{format_hack(previous)}"')
             return
 
         people = [user.id for user in mentions] if len(mentions) > 0 else previous['people']
         hack = {'people': people, 'description': project}
         hacks[index] = hack
+        write_hacks()
 
         await ctx.send(f'Updated hack "{format_hack(hack)}"')
-        await list_(ctx)
+        await send_hacks_list(ctx.channel)
         await edit_sent(ctx)
 
 
@@ -276,12 +289,12 @@ async def update_error(ctx, error):
 @bot.command('remove', brief='Remove a hack')
 async def remove(ctx: Context, index: int = None):
     if index == None or index >= len(hacks):
-        await list_(ctx)
+        await send_hacks_list(ctx.channel)
 
     else:
         hack = hacks[index]
 
-        if not (ctx.author.id in hack['people'] or is_mod(ctx)):
+        if not (ctx.author.id in hack['people'] or await is_mod(ctx)):
             await ctx.send(f'Error: You do not have permission to remove "{format_hack(hack)}"')
             return
 
@@ -289,7 +302,7 @@ async def remove(ctx: Context, index: int = None):
         write_hacks()
 
         await ctx.send(f'Removed hack "{format_hack(hack)}"')
-        await list_(ctx)
+        await send_hacks_list(ctx.channel)
         await edit_sent(ctx)
 
 
@@ -301,9 +314,19 @@ async def remove_error(ctx, error):
         raise error
 
 
-if not DISCORD_API_KEY:
-    logger.error("ERROR: Set the env variable 'DISCORD_API_KEY'")
-    exit(1)
+if __name__ == '__main__':
+    if not DISCORD_API_KEY:
+        logger.error("ERROR: Set the env variable 'DISCORD_API_KEY'")
+        exit(1)
 
+    load_hacks()
+    load_guilds()
 
-bot.run(DISCORD_API_KEY)
+    try:
+        asyncio.get_event_loop().run_until_complete(bot.start(DISCORD_API_KEY))
+    except KeyboardInterrupt:
+        print('Exiting... dumping JSON')
+        if len(hacks) > 0:
+            write_hacks()
+        if len(guilds.keys()) > 0:
+            write_guilds()
