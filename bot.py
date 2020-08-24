@@ -124,7 +124,7 @@ async def list_(ctx: Context):
     await send_hacks_list(ctx.channel)
 
 
-@bot.command('send', brief='Send hackathon info and hacks list msgs')
+@bot.command('send', brief='Send hackathon info + hacks messages')
 @check(is_mod)
 async def send(ctx: Context, channel: discord.TextChannel = None):
     hack_guild = db.get_guild(ctx.guild.id)
@@ -146,7 +146,7 @@ async def send(ctx: Context, channel: discord.TextChannel = None):
         db.set_guild(ctx.guild.id, hack_guild)
 
 
-@bot.command('delete', brief='Delete hackathon info messages')
+@bot.command('delete', brief='Delete hackathon info + hacks messages')
 @check(is_mod)
 async def delete(ctx: Context, channel: discord.TextChannel = None):
     hack_guild = db.get_guild(ctx.guild.id)

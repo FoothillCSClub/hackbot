@@ -5,7 +5,7 @@ MAIN_TEXT = f'''
 
 __**ABOUT THE HACKATHON**__
 
-This summer, Foothill CS club is hosting an online hackathon! You can start whenever you like, choose a project based on your interests, and work in groups or alone.
+This summer, Foothill CS Club is hosting an online hackathon! You can start whenever you like, choose a project based on your interests, and work in groups or alone.
 
 At the end of the hackathon, we will show off our creations, and everybody who participates can vote on their favorite project.
 
