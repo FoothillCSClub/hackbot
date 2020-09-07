@@ -25,4 +25,23 @@ __**POSSIBLE PROJECT IDEAS**__
 - Make a discord bot
 - Make a video game
 
+-------------
+
+__**HACKATHON SUBMISSIONS**__
+
+Submit Before: (Sunday, 6 September 2020 at 11:59 pm Pacific) *not enforced*  :wink:
+
+1. Put your source code into a GitHub repository (let us know if you'd like to learn how!)
+2. Add a README.md with a Project Description and a "How To Use" section that describes how somebody can install, use, or interact with your project.
+4. Profit
+
+__**PRESENTATIONS**__
+
+(Monday, 7 September 2020 at 4:00 pm Pacific)
+
+On Labor Day, we are going to meet up in the "Voice - General" channel + <#709920011288051733>, to give brief presentations and show off the cool things we've been working on!
+
+__**AWARDS**__
+
+Dank Memes will be attached to pdf documents with fancy borders and distributed at random times next week once <@!403084160253689857> makes the awards.
 '''
