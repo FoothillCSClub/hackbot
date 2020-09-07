@@ -67,6 +67,25 @@ Delete the last tracked info messages from a channel (sent by `hacks send`), if 
 
 
 
+## Development
+
+Install [`discord.py`](https://pypi.org/project/discord.py/) and [`tinydb`](https://pypi.org/project/tinydb/) through pip.
+
+Set an environment variable `DISCORD_API_KEY` to your Discord bot API key, and then run the following:
+
+```bash
+python3 bot.py
+```
+
+On UNIX systems, you can also run:
+
+```bash
+DISCORD_API_KEY="mykey" python3 bot.py
+```
+
+**Warning**: if you do this, then your API key will be in your shell command history!
+
+
 ## License
 
 [MIT License](LICENSE)
