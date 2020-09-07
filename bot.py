@@ -54,7 +54,7 @@ def format_hacks(add_index=False):
 
     for i, hack in enumerate(db.get_hacks()):
         if add_index:
-            parts += f'`{i}` '
+            parts += f'`{str(i).zfill(2)}` '
         parts += f'{format_hack(hack)}\n'
 
     return parts
