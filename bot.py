@@ -38,11 +38,15 @@ def id_to_mention(user_id):
     return f'<@{user_id}>'
 
 
-def format_hack(hack):
+def format_hack(hack, show_link=False):
     parts = ''
+    url = hack.get('url')
 
     for person in hack['people']:
         parts += f"<@{person}> "
+
+    if show_link and url:
+        parts += f"[**LINK**]({url}) "
 
     parts += f" - {hack['description']}"
 
@@ -54,8 +58,8 @@ def format_hacks(add_index=False):
 
     for i, hack in enumerate(db.get_hacks()):
         if add_index:
-            parts += f'`{str(i).zfill(2)}` '
-        parts += f'{format_hack(hack)}\n'
+            parts += f'` {str(i).zfill(2)} ` '
+        parts += f'{format_hack(hack, show_link=True)}\n'
 
     return parts
 
@@ -233,7 +237,62 @@ async def update(ctx: Context, index: int = None, description: str = None):
             return
 
         people = [user.id for user in mentions] if len(mentions) > 0 else previous['people']
-        hack = {'people': people, 'description': description}
+        hack = {**previous, 'people': people, 'description': description}
+        hacks[index] = hack
+        db.set_hacks(hacks)
+
+        await ctx.send(f'Updated hack "{format_hack(hack)}"')
+        await send_hacks_list(ctx.channel)
+        await edit_sent(ctx)
+
+
+@bot.command('link', brief='Add a project link to a hack')
+async def link(ctx: Context, index: int = None, url: str = None):
+    hacks = db.get_hacks()
+
+    if index == None or index >= len(hacks):
+        await send_hacks_list(ctx.channel)
+
+    elif not url:
+        embed = discord.Embed(
+            title="Error: Can't update the hack",
+            description=f'Project url has to be specified!'
+        )
+        await ctx.send(embed=embed)
+
+    else:
+        previous = hacks[index]
+
+        if not (ctx.author.id in previous['people'] or await is_mod(ctx)):
+            await ctx.send(f'Error: You do not have permission to modify "{format_hack(previous)}"')
+            return
+
+        hack = {**previous, 'url': url}
+        hacks[index] = hack
+        db.set_hacks(hacks)
+
+        await ctx.send(f'Updated hack "{format_hack(hack)}"')
+        await send_hacks_list(ctx.channel)
+        await edit_sent(ctx)
+
+
+@bot.command('unlink', brief='Remove a project link from a hack')
+async def link(ctx: Context, index: int = None):
+    hacks = db.get_hacks()
+
+    if index == None or index >= len(hacks):
+        await send_hacks_list(ctx.channel)
+
+    else:
+        previous = hacks[index]
+
+        if not (ctx.author.id in previous['people'] or await is_mod(ctx)):
+            await ctx.send(f'Error: You do not have permission to modify "{format_hack(previous)}"')
+            return
+
+        hack = {**previous}
+        hack.pop('url', None)
+
         hacks[index] = hack
         db.set_hacks(hacks)
 
